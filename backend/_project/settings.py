@@ -10,22 +10,27 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv, find_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+dotenv_path = find_dotenv()
+load_dotenv(dotenv_path)
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-pae1(g9zfnza6slp96ohut*u2b#$=g4=g_on#524_9m#up_!p4'
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
 
 
 # Application definition
@@ -37,7 +42,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'django_celery_beat',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'django_redis',
+
+    'apps.accounts',
 ]
+
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -73,9 +87,13 @@ WSGI_APPLICATION = '_project.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("POSTGRES_DB", "workout_db"),
+        "USER": os.environ.get("POSTGRES_USER", "workout_user"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "workout_password"),
+        "HOST": os.environ.get("POSTGRES_HOST", "db"),
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
     }
 }
 
@@ -102,12 +120,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
+LANGUAGE_CODE = os.environ.get("DJANGO_LANGUAGE_CODE", "ru-ru")
+TIME_ZONE = os.environ.get("DJANGO_TIME_ZONE", "Europe/Moscow")
 USE_I18N = True
-
 USE_TZ = True
 
 
@@ -120,3 +135,27 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REDIS_HOST = os.environ.get("REDIS_HOST", "redis")
+REDIS_PORT = os.environ.get("REDIS_PORT", "6379")
+REDIS_DB_BROKER = os.environ.get("REDIS_DB_CELERY_BROKER", "0")
+REDIS_DB_RESULT = os.environ.get("REDIS_DB_CELERY_RESULT", "1")
+
+CELERY_BROKER_URL = os.environ.get(
+    "CELERY_BROKER_URL",
+    f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_BROKER}",
+)
+
+CELERY_RESULT_BACKEND = os.environ.get(
+    "CELERY_RESULT_BACKEND",
+    f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_RESULT}",
+)
+
+CELERY_TASK_DEFAULT_QUEUE = os.environ.get("CELERY_TASK_DEFAULT_QUEUE", "default")
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_NAME = os.environ.get("TELEGRAM_BOT_NAME", "workout_tracker_bot")
