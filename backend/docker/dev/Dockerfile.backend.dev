@@ -1,0 +1,40 @@
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    gcc \
+    curl \
+    ca-certificates \
+    netcat-traditional \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --all-extras --dev
+
+COPY backend /app/backend
+
+RUN sed -i 's/\r$//' backend/docker/dev/entrypoint.sh \
+    && sed -i 's/\r$//' backend/docker/dev/cmd_start_web.sh \
+    && sed -i 's/\r$//' backend/docker/dev/celery/cmd_start_celery.sh \
+    && sed -i 's/\r$//' backend/docker/dev/celery/cmd_start_celery_beat.sh \
+    && chmod +x backend/docker/dev/entrypoint.sh \
+               backend/docker/dev/cmd_start_web.sh \
+               backend/docker/dev/celery/cmd_start_celery.sh \
+               backend/docker/dev/celery/cmd_start_celery_beat.sh
+
+ENTRYPOINT ["/app/backend/docker/dev/entrypoint.sh"]
+CMD ["/app/backend/docker/dev/cmd_start_web.sh"]

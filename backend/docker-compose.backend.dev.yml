@@ -1,0 +1,83 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: backend/docker/dev/Dockerfile.backend.dev
+    env_file:
+      - ../.env
+    environment:
+      RUN_DJANGO_MIGRATIONS: "true"
+    working_dir: /app/backend
+    command: ["./docker/dev/cmd_start_web.sh"]
+    volumes:
+      - ./:/app/backend
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+
+  celery:
+    build:
+      context: ..
+      dockerfile: backend/docker/dev/Dockerfile.backend.dev
+    command: ["./docker/dev/celery/cmd_start_celery.sh"]
+    env_file:
+      - ../.env
+    environment:
+      RUN_DJANGO_MIGRATIONS: "false"
+    working_dir: /app/backend
+    volumes:
+      - .:/app/backend
+      - venv-data:/opt/venv
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app-network
+
+  celery_beat:
+    build:
+      context: ..
+      dockerfile: backend/docker/dev/Dockerfile.backend.dev
+    command: ["./docker/dev/celery/cmd_start_celery_beat.sh"]
+    env_file:
+      - ../.env
+    environment:
+      RUN_DJANGO_MIGRATIONS: "false"
+    working_dir: /app/backend
+    volumes:
+      - .:/app/backend
+      - venv-data:/opt/venv
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app-network
+
+  db:
+    image: postgres:16
+    env_file:
+      - ../.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7
+    volumes:
+      - redisdata:/data
+    networks:
+      - app-network
+
+volumes:
+  pgdata:
+  redisdata:
+  venv-data:
+
+networks:
+  app-network:
+    driver: bridge
