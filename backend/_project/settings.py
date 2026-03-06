@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'django_redis',
 
     'apps.accounts',
+    'apps.core',
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -122,8 +123,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = os.environ.get("DJANGO_LANGUAGE_CODE", "ru-ru")
 TIME_ZONE = os.environ.get("DJANGO_TIME_ZONE", "Europe/Moscow")
+CELERY_TIMEZONE = "Europe/Moscow"
 USE_I18N = True
 USE_TZ = True
+DJANGO_CELERY_BEAT_TZ_AWARE = True
 
 
 # Static files (CSS, JavaScript, Images)
@@ -160,3 +163,4 @@ CELERY_RESULT_SERIALIZER = "json"
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_BOT_NAME = os.environ.get("TELEGRAM_BOT_NAME", "workout_tracker_bot")
+BOT_API_TOKEN = os.environ.get("BOT_API_TOKEN", "")
