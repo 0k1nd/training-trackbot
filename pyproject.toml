@@ -14,5 +14,6 @@ dependencies = [
     "dotenv>=0.9.9",
     "gunicorn>=25.1.0",
     "psycopg2-binary>=2.9.11",
+    "pytz>=2025.2",
     "rest-framework-simplejwt>=0.0.2",
 ]
