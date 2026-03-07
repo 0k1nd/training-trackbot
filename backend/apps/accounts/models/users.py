@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-from apps.accounts.constants import GenderType
+from apps.core.constants import GenderType
 
 
 class User(AbstractUser):

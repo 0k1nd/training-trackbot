@@ -6,7 +6,8 @@ from apps.accounts.models import User
 class BodyMetrics(models.Model):
     user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='bodymetrics'
     )
     date = models.DateTimeField(
         auto_now_add=True
