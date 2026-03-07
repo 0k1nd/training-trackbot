@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.accounts.models import User
+from apps.accounts.models import User, BodyMetrics
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -24,3 +24,22 @@ class RegistrationSerializer(serializers.ModelSerializer):
             user.save(update_fields=["username"])
 
         return user
+    
+
+class BodyMetricsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BodyMetrics
+        fields = [
+            "id",
+            "date",
+            "weight_kg",
+            "body_fat_percent",
+            "neck_cm",
+            "chest_cm",
+            "waist_cm",
+            "hips_cm",
+            "thigh_cm",
+            "calf_cm",
+            "biceps_cm",
+            "note",
+        ]
