@@ -11,7 +11,7 @@ class Workout(TimeStampedModel):
         on_delete=models.CASCADE,
         related_name='workouts'
     )
-    note = models.TimeField(
+    note = models.TextField(
         blank=True,
         null=True
     )
