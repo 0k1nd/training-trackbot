@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 
     'apps.accounts',
     'apps.core',
+    'apps.trainings',
 ]
 
 AUTH_USER_MODEL = "accounts.User"
