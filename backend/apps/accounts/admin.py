@@ -47,7 +47,7 @@ class BodyMetricsInline(admin.TabularInline):
     model = BodyMetrics
     extra = 0
     fields = (
-        "date",
+        "created_at",
         "weight_kg",
         "body_fat_percent",
         "waist_cm",
@@ -55,8 +55,8 @@ class BodyMetricsInline(admin.TabularInline):
         "chest_cm",
         "biceps_cm",
     )
-    readonly_fields = ("date",)
-    ordering = ("-date",)
+    readonly_fields = ("created_at",)
+    ordering = ("-created_at",)
 
 
 @admin.register(BodyMetrics)
@@ -64,23 +64,23 @@ class BodyMetricsAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "user",
-        "date",
+        "created_at",
         "weight_kg",
         "body_fat_percent",
         "waist_cm",
         "hips_cm",
     )
     list_display_links = ("id", "user")
-    list_filter = ("date", "user")
+    list_filter = ("created_at", "user")
     search_fields = ("user__username", "user__chat_id")
-    readonly_fields = ("date",)
-    ordering = ("-date",)
+    readonly_fields = ("created_at",)
+    ordering = ("-created_at",)
 
     fieldsets = (
         ("Общая информация", {
             "fields": (
                 "user",
-                "date",
+                "created_at",
                 "weight_kg",
                 "body_fat_percent",
             )
