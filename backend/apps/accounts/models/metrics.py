@@ -1,9 +1,9 @@
 from django.db import models
 
 from apps.accounts.models import User
+from apps.core.models import TimeStampedModel
 
-
-class BodyMetrics(models.Model):
+class BodyMetrics(TimeStampedModel):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

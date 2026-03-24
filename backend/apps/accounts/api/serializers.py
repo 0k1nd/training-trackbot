@@ -5,7 +5,7 @@ from apps.accounts.models import User, BodyMetrics
 
 class RegistrationSerializer(serializers.ModelSerializer):
     chat_id = serializers.IntegerField(write_only=True, required=True)
-    username = serializers.CharField()
+    username = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
@@ -13,13 +13,18 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         chat_id = validated_data.pop("chat_id")
-        username = validated_data.get("username", "")
+        raw_username = validated_data.get("username") or ""
+
+        username = raw_username.strip()
+        if not username:
+            username = f"user_{chat_id}"
 
         user, created = User.objects.get_or_create(
             chat_id=chat_id,
             defaults={"username": username},
         )
-        if not created and username and user.username != username:
+
+        if not created and raw_username and user.username != username:
             user.username = username
             user.save(update_fields=["username"])
 
