@@ -1,7 +1,7 @@
 # apps/accounts/admin.py
 from django.contrib import admin
 
-from .models import User, BodyMetrics
+from .models import BodyMetrics, User
 
 
 @admin.register(User)
@@ -23,23 +23,18 @@ class UserAdmin(admin.ModelAdmin):
     readonly_fields = ("registed_at",)
     ordering = ("-registed_at",)
     fieldsets = (
-        ("Основная информация", {
-            "fields": (
-                "username",
-                "gender",
-                "was_born_at",
-            )
-        }),
-        ("Телега / доп. поля", {
-            "fields": (
-                "chat_id",
-            )
-        }),
-        ("Системная инфа", {
-            "fields": (
-                "registed_at",
-            )
-        }),
+        (
+            "Основная информация",
+            {
+                "fields": (
+                    "username",
+                    "gender",
+                    "was_born_at",
+                )
+            },
+        ),
+        ("Телега / доп. поля", {"fields": ("chat_id",)}),
+        ("Системная инфа", {"fields": ("registed_at",)}),
     )
 
 
@@ -77,28 +72,32 @@ class BodyMetricsAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
 
     fieldsets = (
-        ("Общая информация", {
-            "fields": (
-                "user",
-                "created_at",
-                "weight_kg",
-                "body_fat_percent",
-            )
-        }),
-        ("Замеры (см)", {
-            "fields": (
-                "neck_cm",
-                "chest_cm",
-                "waist_cm",
-                "hips_cm",
-                "thigh_cm",
-                "calf_cm",
-                "biceps_cm",
-            )
-        }),
-        ("Дополнительно", {
-            "fields": ("note",)
-        }),
+        (
+            "Общая информация",
+            {
+                "fields": (
+                    "user",
+                    "created_at",
+                    "weight_kg",
+                    "body_fat_percent",
+                )
+            },
+        ),
+        (
+            "Замеры (см)",
+            {
+                "fields": (
+                    "neck_cm",
+                    "chest_cm",
+                    "waist_cm",
+                    "hips_cm",
+                    "thigh_cm",
+                    "calf_cm",
+                    "biceps_cm",
+                )
+            },
+        ),
+        ("Дополнительно", {"fields": ("note",)}),
     )
 
 

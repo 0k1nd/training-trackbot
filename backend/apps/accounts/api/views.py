@@ -1,20 +1,15 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import viewsets, status
-
-from django.shortcuts import get_object_or_404
-
-from apps.accounts.api.serializers import (
-    BodyMetricsSerializer,
-    RegistrationSerializer
-)
-from apps.accounts.models import BodyMetrics, User
-from apps.core.permissions import IsTelegramBot
-
 import logging
 
+from apps.accounts.api.serializers import BodyMetricsSerializer, RegistrationSerializer
+from apps.accounts.models import BodyMetrics, User
+from apps.core.permissions import IsTelegramBot
+from django.shortcuts import get_object_or_404
+from rest_framework import status, viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 logger = logging.getLogger(__name__)
+
 
 class RegistrationView(APIView):
     permission_classes = [IsTelegramBot]

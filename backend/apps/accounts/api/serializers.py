@@ -1,6 +1,5 @@
+from apps.accounts.models import BodyMetrics, User
 from rest_framework import serializers
-
-from apps.accounts.models import User, BodyMetrics
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -29,7 +28,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
             user.save(update_fields=["username"])
 
         return user
-    
+
 
 class BodyMetricsSerializer(serializers.ModelSerializer):
     class Meta:

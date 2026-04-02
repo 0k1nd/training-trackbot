@@ -1,5 +1,3 @@
 from .timestap import TimeStampedModel
 
-__all__ = [
-    "TimeStampedModel"
-]
+__all__ = ["TimeStampedModel"]

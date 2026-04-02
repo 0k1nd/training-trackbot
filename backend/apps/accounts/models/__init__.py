@@ -1,7 +1,4 @@
-from .users import User
 from .metrics import BodyMetrics
+from .users import User
 
-__all__ = [
-    "User",
-    "BodyMetrics"
-]
+__all__ = ["User", "BodyMetrics"]

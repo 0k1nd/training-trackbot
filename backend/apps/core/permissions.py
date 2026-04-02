@@ -1,5 +1,5 @@
-from rest_framework.permissions import BasePermission
 from django.conf import settings
+from rest_framework.permissions import BasePermission
 
 
 class IsTelegramBot(BasePermission):
@@ -8,5 +8,5 @@ class IsTelegramBot(BasePermission):
         prefix = "Bearer"
         if not auth.startswith(prefix):
             return False
-        token = auth[len(prefix):].strip()
+        token = auth[len(prefix) :].strip()
         return token == settings.BOT_API_TOKEN

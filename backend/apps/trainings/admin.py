@@ -1,6 +1,5 @@
+from apps.trainings.models import Exercise, Set, Workout, WorkoutExercise
 from django.contrib import admin
-
-from apps.trainings.models import Workout, WorkoutExercise, Set, Exercise
 
 
 class WorkoutExerciseInline(admin.TabularInline):
@@ -43,6 +42,14 @@ class WorkoutExerciseAdmin(admin.ModelAdmin):
 
 @admin.register(Set)
 class SetAdmin(admin.ModelAdmin):
-    list_display = ("id", "workout_exercise", "set_number", "weight", "reps", "difficulty", "created_at")
+    list_display = (
+        "id",
+        "workout_exercise",
+        "set_number",
+        "weight",
+        "reps",
+        "difficulty",
+        "created_at",
+    )
     list_filter = ("difficulty", "workout_exercise__exercise")
     search_fields = ("workout_exercise__workout__user__username",)

@@ -1,13 +1,5 @@
 from .exercises import Exercise
-from .workouts import (
-    Workout,
-    WorkoutExercise
-)
 from .sets import Set
+from .workouts import Workout, WorkoutExercise
 
-__all__ = [
-    'Exercise',
-    'Workout',
-    'WorkoutExercise',
-    'Set'
-]
+__all__ = ["Exercise", "Workout", "WorkoutExercise", "Set"]

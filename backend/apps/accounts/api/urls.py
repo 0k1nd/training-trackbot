@@ -1,8 +1,6 @@
-from django.urls import path, include
+from apps.accounts.api.views import BodyMetricsViewSet, RegistrationView
+from django.urls import include, path
 from rest_framework.routers import SimpleRouter
-
-from apps.accounts.api.views import RegistrationView, BodyMetricsViewSet
-
 
 router = SimpleRouter()
 router.register("body-metrics", BodyMetricsViewSet, basename="body-metrics")
