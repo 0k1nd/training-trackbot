@@ -1,6 +1,6 @@
 from apps.core import constants
 from apps.core.models import TimeStampedModel
-from apps.trainings.models import WorkoutExercise
+from apps.trainings.models.workouts import WorkoutExercise
 from django.db import models
 
 
@@ -17,4 +17,5 @@ class Set(TimeStampedModel):
     )
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["set_number"]
+        unique_together = ("workout_exercise", "set_number")

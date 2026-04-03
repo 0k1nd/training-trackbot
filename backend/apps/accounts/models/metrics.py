@@ -1,4 +1,4 @@
-from apps.accounts.models import User
+from apps.accounts.models.users import User
 from apps.core.models import TimeStampedModel
 from django.db import models
 

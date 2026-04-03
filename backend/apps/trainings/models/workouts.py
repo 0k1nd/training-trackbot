@@ -1,7 +1,7 @@
 from apps.accounts.models import User
 from apps.core import constants
 from apps.core.models import TimeStampedModel
-from apps.trainings.models import Exercise
+from apps.trainings.models.exercises import Exercise
 from django.db import models
 
 
@@ -13,6 +13,8 @@ class Workout(TimeStampedModel):
         choices=constants.WorkoutType.choices,
         default=constants.WorkoutType.FULL_BODY,
     )
+
+    finished_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
