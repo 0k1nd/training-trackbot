@@ -10,14 +10,14 @@ DOCKER_COMPOSE_ALL = docker-compose.yml
 # QA / Lint
 
 pre-commit:
-	pre-commit run --all-files
+	uv run pre-commit run --all-files
 
 ruff:
-	ruff check .
+	uv run ruff check .
 
 ruff-fix:
-	ruff check . --fix
-	ruff format .
+	uv run ruff check . --fix
+	uv run ruff format .
 
 # Django
 
