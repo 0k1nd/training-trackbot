@@ -144,6 +144,12 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+REST_FRAMEWORK = {
+    "DEFAULT_THROTTLE_RATES": {
+        "bot": "60/min",
+    },
+}
+
 REDIS_HOST = os.environ.get("REDIS_HOST", "redis")
 REDIS_PORT = os.environ.get("REDIS_PORT", "6379")
 REDIS_DB_BROKER = os.environ.get("REDIS_DB_CELERY_BROKER", "0")

@@ -35,7 +35,7 @@ class BodyMetricsSerializer(serializers.ModelSerializer):
         model = BodyMetrics
         fields = [
             "id",
-            "date",
+            "created_at",
             "weight_kg",
             "body_fat_percent",
             "neck_cm",
