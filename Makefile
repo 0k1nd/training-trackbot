@@ -5,7 +5,7 @@ DOCKER_COMPOSE_ALL = docker-compose.yml
 .PHONY: pre-commit ruff ruff-fix \
         up-backend-dev down-backend-dev logs-backend-dev build-backend-dev \
         migrate makemigrations superuser \
-        up-all down-all
+        up-all build-all down-all
 
 # QA / Lint
 
@@ -45,6 +45,9 @@ logs-backend-dev:
 	docker compose -f $(DOCKER_COMPOSE_BACKEND_DEV) logs -f
 
 # Docker: all
+
+build-all:
+	docker compose -f $(DOCKER_COMPOSE_ALL) build
 
 up-all:
 	docker compose -f $(DOCKER_COMPOSE_ALL) up -d
