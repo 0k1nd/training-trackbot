@@ -29,3 +29,8 @@ class WorkoutExercise(models.Model):
     )
     order = models.PositiveIntegerField(default=1)
     note = models.TextField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["order"]
+        unique_together = ("workout", "order")

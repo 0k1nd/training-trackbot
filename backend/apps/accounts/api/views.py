@@ -44,7 +44,51 @@ class BodyMetricsViewSet(viewsets.ModelViewSet):
         user = self.get_user()
         if user is None:
             return BodyMetrics.objects.none()
-        return BodyMetrics.objects.filter(user=user).order_by("-date", "-id")
+        return BodyMetrics.objects.filter(user=user).order_by("-created_at", "-id")
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        try:
+            limit = int(request.query_params.get("limit", 5))
+        except (TypeError, ValueError):
+            limit = 5
+
+        try:
+            offset = int(request.query_params.get("offset", 0))
+        except (TypeError, ValueError):
+            offset = 0
+
+        if limit < 1:
+            limit = 5
+        if limit > 20:
+            limit = 20
+        if offset < 0:
+            offset = 0
+
+        total = queryset.count()
+        items = queryset[offset : offset + limit]
+
+        serializer = self.get_serializer(items, many=True)
+
+        next_offset = offset + limit if offset + limit < total else None
+        prev_offset = offset - limit if offset - limit >= 0 else None
+
+        return Response(
+            {
+                "count": total,
+                "limit": limit,
+                "offset": offset,
+                "next_offset": next_offset,
+                "prev_offset": prev_offset,
+                "results": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def get_object(self):
+        queryset = self.get_queryset()
+        return get_object_or_404(queryset, pk=self.kwargs["pk"])
 
     def perform_create(self, serializer):
         user = self.get_user()
