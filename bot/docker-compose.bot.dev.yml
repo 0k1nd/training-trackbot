@@ -1,0 +1,14 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: bot/docker/Dockerfile.dev
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - training_network
+
+networks:
+  training_network:
+    external: true

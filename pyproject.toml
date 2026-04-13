@@ -35,3 +35,10 @@ quote-style = "double"
 dev = [
     "ruff>=0.15.8",
 ]
+
+tg_bot = [
+    "python-telegram-bot[job-queue]>=21.10,<22.0",
+    "aiohttp>=3.11,<4.0",
+    "pydantic>=2.10,<3.0",
+    "python-dotenv>=1.2.2",
+]
