@@ -13,7 +13,6 @@ class AddSetView(APIView):
     def post(self, request):
         serializer = AddSetSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         obj = serializer.save()
 
         return Response(

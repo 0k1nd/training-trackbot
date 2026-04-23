@@ -1,7 +1,9 @@
+from apps.accounts.models import User
 from apps.core.permissions import IsTelegramBot
 from apps.core.throttling import BotRateThrottle
 from apps.trainings.api.serializers import FinishWorkoutSerializer, StartWorkoutSerializer
 from apps.trainings.models import Exercise, Workout, WorkoutExercise
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -17,7 +19,7 @@ class StartWorkoutView(APIView):
         serializer.is_valid(raise_exception=True)
         workout = serializer.save()
 
-        return Response({"workout_id": workout.id})
+        return Response({"workout_id": workout.id}, status=status.HTTP_201_CREATED)
 
 
 class CurrentWorkoutView(APIView):
@@ -33,7 +35,7 @@ class CurrentWorkoutView(APIView):
         )
 
         if not workout:
-            return Response({"detail": "no active workout"}, status=404)
+            return Response({"detail": "no active workout"}, status=status.HTTP_404_NOT_FOUND)
 
         return Response({"id": workout.id})
 
@@ -42,11 +44,32 @@ class AddExerciseToWorkoutView(APIView):
     permission_classes = [IsTelegramBot]
 
     def post(self, request):
-        workout = Workout.objects.get(id=request.data["workout_id"])
-        exercise = Exercise.objects.get(id=request.data["exercise_id"])
+        chat_id = request.data["chat_id"]
+        workout_id = request.data["workout_id"]
+        exercise_id = request.data["exercise_id"]
+
+        workout = Workout.objects.filter(
+            id=workout_id,
+            user__chat_id=chat_id,
+            finished_at__isnull=True,
+        ).first()
+        if not workout:
+            return Response(
+                {"detail": "active workout not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        user = User.objects.get(chat_id=chat_id)
+
+        exercise = Exercise.objects.filter(
+            Q(id=exercise_id),
+            Q(author=user) | Q(is_basic=True),
+        ).first()
+
+        if not exercise:
+            return Response({"detail": "exercise not found"}, status=status.HTTP_404_NOT_FOUND)
 
         last = workout.items.order_by("-order").first()
-        next_order = (last.order + 1) if last else 1
+        next_order = last.order + 1 if last else 1
 
         item = WorkoutExercise.objects.create(
             workout=workout,
@@ -54,7 +77,89 @@ class AddExerciseToWorkoutView(APIView):
             order=next_order,
         )
 
-        return Response({"workout_exercise_id": item.id})
+        return Response(
+            {
+                "workout_exercise_id": item.id,
+                "exercise_id": exercise.id,
+                "exercise_name": exercise.name,
+                "order": item.order,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class WorkoutExerciseSetsView(APIView):
+    permission_classes = [IsTelegramBot]
+
+    def get(self, request, pk: int):
+        chat_id = request.query_params.get("chat_id")
+
+        workout_exercise = (
+            WorkoutExercise.objects.filter(
+                id=pk,
+                workout__user__chat_id=chat_id,
+            )
+            .select_related("exercise")
+            .prefetch_related("sets")
+            .first()
+        )
+
+        if not workout_exercise:
+            return Response(
+                {"detail": "workout exercise not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response(
+            {
+                "id": workout_exercise.id,
+                "exercise": {
+                    "id": workout_exercise.exercise.id,
+                    "name": workout_exercise.exercise.name,
+                },
+                "sets": [
+                    {
+                        "id": s.id,
+                        "set_number": s.set_number,
+                        "weight": s.weight,
+                        "reps": s.reps,
+                        "difficulty": s.difficulty,
+                    }
+                    for s in workout_exercise.sets.all().order_by("set_number")
+                ],
+            }
+        )
+
+
+class FinishWorkoutExerciseView(APIView):
+    permission_classes = [IsTelegramBot]
+
+    def post(self, request):
+        chat_id = request.data.get("chat_id")
+        workout_exercise_id = request.data.get("workout_exercise_id")
+
+        workout_exercise = WorkoutExercise.objects.filter(
+            id=workout_exercise_id,
+            workout__user__chat_id=chat_id,
+            workout__finished_at__isnull=True,
+            finished_at__isnull=True,
+        ).first()
+
+        if not workout_exercise:
+            return Response(
+                {"detail": "workout exercise not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        workout_exercise.finished_at = timezone.now()
+        workout_exercise.save(update_fields=["finished_at"])
+
+        return Response(
+            {
+                "id": workout_exercise.id,
+                "status": "finished",
+                "finished_at": workout_exercise.finished_at,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class FinishWorkoutView(APIView):
@@ -65,7 +170,7 @@ class FinishWorkoutView(APIView):
         serializer = FinishWorkoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        workout = Workout.objects.get(id=serializer.validated_data["workout_id"])
+        workout = serializer.validated_data["workout"]
 
         if workout.finished_at is not None:
             return Response(
