@@ -53,3 +53,17 @@ def body_metrics_list_keyboard(
     rows.append([InlineKeyboardButton(text="Назад", callback_data="body:menu")])
 
     return InlineKeyboardMarkup(rows)
+
+
+def body_metrics_step_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(text="⬅️ Назад", callback_data="body:step:back"),
+                InlineKeyboardButton(text="Пропустить", callback_data="body:step:skip"),
+            ],
+            [
+                InlineKeyboardButton(text="Отмена", callback_data="body:step:cancel"),
+            ],
+        ]
+    )

@@ -1,5 +1,3 @@
-from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
-
 from telegram import Update
 from telegram.ext import (
     CallbackQueryHandler,
@@ -10,34 +8,12 @@ from telegram.ext import (
 )
 
 from app.conversations.states import BodyMetricStates
-from app.keyboards.body_metrics import body_metrics_menu_keyboard
-from app.services.body_metrics_pagination import (
-    render_body_metrics_page,
-    render_body_metrics_page_after_delete,
+from app.keyboards.body_metrics import (
+    body_metrics_menu_keyboard,
+    body_metrics_step_keyboard,
 )
-
-
-def _parse_optional_decimal(value: str) -> str | None:
-    value = value.strip()
-    if value == "-":
-        return None
-
-    normalized = value.replace(",", ".")
-
-    try:
-        decimal_value = Decimal(normalized)
-    except InvalidOperation:
-        raise ValueError("invalid decimal")
-
-    decimal_value = decimal_value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    return str(decimal_value)
-
-
-def _parse_optional_int(value: str) -> int | None:
-    value = value.strip()
-    if value == "-":
-        return None
-    return int(value)
+from app.services.body_metrics_pagination import render_body_metrics_page
+from app.services.body_metrics_steps import BODY_METRIC_STEPS, parse_step_value
 
 
 async def body_metrics_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -60,181 +36,143 @@ async def body_metrics_list_handler(update: Update, context: ContextTypes.DEFAUL
     await render_body_metrics_page(query, context, offset)
 
 
+async def _show_current_step(target, context: ContextTypes.DEFAULT_TYPE):
+    step_index = context.user_data.get("body_metric_step", 0)
+    step = BODY_METRIC_STEPS[step_index]
+
+    text = f"Шаг {step_index + 1} из {len(BODY_METRIC_STEPS)}\n\n{step['text']}"
+
+    if hasattr(target, "edit_message_text"):
+        await target.edit_message_text(
+            text=text,
+            reply_markup=body_metrics_step_keyboard(),
+        )
+    else:
+        await target.reply_text(
+            text=text,
+            reply_markup=body_metrics_step_keyboard(),
+        )
+
+
 async def body_metric_add_start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     context.user_data["body_metric_payload"] = {}
+    context.user_data["body_metric_step"] = 0
 
-    await query.edit_message_text("Введите вес в кг или отправьте '-'")
-    return BodyMetricStates.WAITING_WEIGHT
+    await _show_current_step(query, context)
+    return BodyMetricStates.WAITING_VALUE
 
 
-async def body_metric_weight_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def body_metric_value_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    step_index = context.user_data.get("body_metric_step", 0)
+    step = BODY_METRIC_STEPS[step_index]
+    payload = context.user_data.setdefault("body_metric_payload", {})
+
+    raw_value = update.message.text.strip()
+
     try:
-        value = _parse_optional_decimal(update.message.text)
+        value = parse_step_value(step["type"], raw_value)
     except ValueError:
-        await update.message.reply_text("Введите число или '-'")
-        return BodyMetricStates.WAITING_WEIGHT
+        await update.message.reply_text(
+            "Неверный формат. Попробуйте ещё раз.",
+            reply_markup=body_metrics_step_keyboard(),
+        )
+        return BodyMetricStates.WAITING_VALUE
 
-    if value is not None:
-        context.user_data["body_metric_payload"]["weight_kg"] = value
+    payload[step["key"]] = value
 
-    await update.message.reply_text("Введите процент жира или отправьте '-'")
-    return BodyMetricStates.WAITING_BODY_FAT_PERCENT
+    next_step = step_index + 1
+    context.user_data["body_metric_step"] = next_step
 
+    if next_step >= len(BODY_METRIC_STEPS):
+        api_client = context.application.bot_data["api_client"]
 
-async def body_metric_body_fat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        value = _parse_optional_int(update.message.text)
-    except ValueError:
-        await update.message.reply_text("Введите целое число или '-'")
-        return BodyMetricStates.WAITING_BODY_FAT_PERCENT
+        await api_client.create_body_metric(
+            chat_id=update.effective_user.id,
+            payload=payload,
+        )
 
-    if value is not None:
-        context.user_data["body_metric_payload"]["body_fat_percent"] = value
+        context.user_data.pop("body_metric_payload", None)
+        context.user_data.pop("body_metric_step", None)
 
-    await update.message.reply_text("Введите шею в см или отправьте '-'")
-    return BodyMetricStates.WAITING_NECK
+        await update.message.reply_text(
+            text="Параметры тела сохранены.",
+            reply_markup=body_metrics_menu_keyboard(),
+        )
+        return ConversationHandler.END
 
-
-async def body_metric_neck_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        value = _parse_optional_decimal(update.message.text)
-    except ValueError:
-        await update.message.reply_text("Введите число или '-'")
-        return BodyMetricStates.WAITING_NECK
-
-    if value is not None:
-        context.user_data["body_metric_payload"]["neck_cm"] = value
-
-    await update.message.reply_text("Введите грудь в см или отправьте '-'")
-    return BodyMetricStates.WAITING_CHEST
+    await _show_current_step(update.message, context)
+    return BodyMetricStates.WAITING_VALUE
 
 
-async def body_metric_chest_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        value = _parse_optional_decimal(update.message.text)
-    except ValueError:
-        await update.message.reply_text("Введите число или '-'")
-        return BodyMetricStates.WAITING_CHEST
-
-    if value is not None:
-        context.user_data["body_metric_payload"]["chest_cm"] = value
-
-    await update.message.reply_text("Введите талию в см или отправьте '-'")
-    return BodyMetricStates.WAITING_WAIST
-
-
-async def body_metric_waist_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        value = _parse_optional_decimal(update.message.text)
-    except ValueError:
-        await update.message.reply_text("Введите число или '-'")
-        return BodyMetricStates.WAITING_WAIST
-
-    if value is not None:
-        context.user_data["body_metric_payload"]["waist_cm"] = value
-
-    await update.message.reply_text("Введите бёдра в см или отправьте '-'")
-    return BodyMetricStates.WAITING_HIPS
-
-
-async def body_metric_hips_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        value = _parse_optional_decimal(update.message.text)
-    except ValueError:
-        await update.message.reply_text("Введите число или '-'")
-        return BodyMetricStates.WAITING_HIPS
-
-    if value is not None:
-        context.user_data["body_metric_payload"]["hips_cm"] = value
-
-    await update.message.reply_text("Введите бедро в см или отправьте '-'")
-    return BodyMetricStates.WAITING_THIGH
-
-
-async def body_metric_thigh_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        value = _parse_optional_decimal(update.message.text)
-    except ValueError:
-        await update.message.reply_text("Введите число или '-'")
-        return BodyMetricStates.WAITING_THIGH
-
-    if value is not None:
-        context.user_data["body_metric_payload"]["thigh_cm"] = value
-
-    await update.message.reply_text("Введите икру в см или отправьте '-'")
-    return BodyMetricStates.WAITING_CALF
-
-
-async def body_metric_calf_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        value = _parse_optional_decimal(update.message.text)
-    except ValueError:
-        await update.message.reply_text("Введите число или '-'")
-        return BodyMetricStates.WAITING_CALF
-
-    if value is not None:
-        context.user_data["body_metric_payload"]["calf_cm"] = value
-
-    await update.message.reply_text("Введите бицепс в см или отправьте '-'")
-    return BodyMetricStates.WAITING_BICEPS
-
-
-async def body_metric_biceps_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        value = _parse_optional_decimal(update.message.text)
-    except ValueError:
-        await update.message.reply_text("Введите число или '-'")
-        return BodyMetricStates.WAITING_BICEPS
-
-    if value is not None:
-        context.user_data["body_metric_payload"]["biceps_cm"] = value
-
-    await update.message.reply_text("Введите заметку или отправьте '-'")
-    return BodyMetricStates.WAITING_NOTE
-
-
-async def body_metric_note_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    value = update.message.text.strip()
-
-    if value != "-":
-        context.user_data["body_metric_payload"]["note"] = value
-
-    api_client = context.application.bot_data["api_client"]
-    payload = context.user_data.get("body_metric_payload", {})
-
-    await api_client.create_body_metric(
-        chat_id=update.effective_user.id,
-        payload=payload,
-    )
-
-    context.user_data.pop("body_metric_payload", None)
-
-    await update.message.reply_text(
-        text="Параметры тела сохранены.",
-        reply_markup=body_metrics_menu_keyboard(),
-    )
-    return ConversationHandler.END
-
-
-async def body_metric_delete_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def body_metric_step_back_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    parts = query.data.split(":")
-    metric_id = int(parts[2])
-    offset = int(parts[3]) if len(parts) > 3 else 0
+    step_index = context.user_data.get("body_metric_step", 0)
+    payload = context.user_data.setdefault("body_metric_payload", {})
 
-    api_client = context.application.bot_data["api_client"]
+    if step_index > 0:
+        current_step_key = (
+            BODY_METRIC_STEPS[step_index]["key"] if step_index < len(BODY_METRIC_STEPS) else None
+        )
+        if current_step_key:
+            payload.pop(current_step_key, None)
 
-    await api_client.delete_body_metric(
-        chat_id=query.from_user.id,
-        metric_id=metric_id,
+        context.user_data["body_metric_step"] = step_index - 1
+
+    await _show_current_step(query, context)
+    return BodyMetricStates.WAITING_VALUE
+
+
+async def body_metric_step_skip_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    step_index = context.user_data.get("body_metric_step", 0)
+    payload = context.user_data.setdefault("body_metric_payload", {})
+
+    step = BODY_METRIC_STEPS[step_index]
+    payload.pop(step["key"], None)
+
+    next_step = step_index + 1
+    context.user_data["body_metric_step"] = next_step
+
+    if next_step >= len(BODY_METRIC_STEPS):
+        api_client = context.application.bot_data["api_client"]
+
+        await api_client.create_body_metric(
+            chat_id=query.from_user.id,
+            payload=payload,
+        )
+
+        context.user_data.pop("body_metric_payload", None)
+        context.user_data.pop("body_metric_step", None)
+
+        await query.edit_message_text(
+            text="Параметры тела сохранены.",
+            reply_markup=body_metrics_menu_keyboard(),
+        )
+        return ConversationHandler.END
+
+    await _show_current_step(query, context)
+    return BodyMetricStates.WAITING_VALUE
+
+
+async def body_metric_step_cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data.pop("body_metric_payload", None)
+    context.user_data.pop("body_metric_step", None)
+
+    await query.edit_message_text(
+        text="Добавление параметров отменено.",
+        reply_markup=body_metrics_menu_keyboard(),
     )
-
-    await render_body_metrics_page_after_delete(query, context, offset)
+    return ConversationHandler.END
 
 
 def build_body_metrics_conversation():
@@ -243,38 +181,18 @@ def build_body_metrics_conversation():
             CallbackQueryHandler(body_metric_add_start_handler, pattern=r"^body:add$"),
         ],
         states={
-            BodyMetricStates.WAITING_WEIGHT: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, body_metric_weight_handler),
-            ],
-            BodyMetricStates.WAITING_BODY_FAT_PERCENT: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, body_metric_body_fat_handler),
-            ],
-            BodyMetricStates.WAITING_NECK: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, body_metric_neck_handler),
-            ],
-            BodyMetricStates.WAITING_CHEST: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, body_metric_chest_handler),
-            ],
-            BodyMetricStates.WAITING_WAIST: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, body_metric_waist_handler),
-            ],
-            BodyMetricStates.WAITING_HIPS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, body_metric_hips_handler),
-            ],
-            BodyMetricStates.WAITING_THIGH: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, body_metric_thigh_handler),
-            ],
-            BodyMetricStates.WAITING_CALF: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, body_metric_calf_handler),
-            ],
-            BodyMetricStates.WAITING_BICEPS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, body_metric_biceps_handler),
-            ],
-            BodyMetricStates.WAITING_NOTE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, body_metric_note_handler),
+            BodyMetricStates.WAITING_VALUE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, body_metric_value_handler),
+                CallbackQueryHandler(body_metric_step_back_handler, pattern=r"^body:step:back$"),
+                CallbackQueryHandler(body_metric_step_skip_handler, pattern=r"^body:step:skip$"),
+                CallbackQueryHandler(
+                    body_metric_step_cancel_handler, pattern=r"^body:step:cancel$"
+                ),
             ],
         },
-        fallbacks=[],
+        fallbacks=[
+            CallbackQueryHandler(body_metric_step_cancel_handler, pattern=r"^body:step:cancel$"),
+        ],
         per_chat=True,
         per_user=True,
     )
@@ -284,8 +202,5 @@ def register_body_metrics_handlers(application):
     application.add_handler(CallbackQueryHandler(body_metrics_menu_handler, pattern=r"^body:menu$"))
     application.add_handler(
         CallbackQueryHandler(body_metrics_list_handler, pattern=r"^body:list(?::\d+)?$")
-    )
-    application.add_handler(
-        CallbackQueryHandler(body_metric_delete_handler, pattern=r"^body:delete:\d+:\d+$")
     )
     application.add_handler(build_body_metrics_conversation())

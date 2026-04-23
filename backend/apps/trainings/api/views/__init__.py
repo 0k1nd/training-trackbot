@@ -6,6 +6,7 @@ from .workouts import (
     FinishWorkoutExerciseView,
     FinishWorkoutView,
     StartWorkoutView,
+    WorkoutExerciseSetsView,
 )
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "AddSetView",
     "FinishWorkoutView",
     "FinishWorkoutExerciseView",
+    "WorkoutExerciseSetsView",
 ]
