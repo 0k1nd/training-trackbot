@@ -10,7 +10,7 @@ from telegram.ext import (
 from app.conversations.states import WorkoutStates
 from app.formatters.sets import format_workout_exercise_sets
 from app.keyboards.exercises import workout_exercise_keyboard
-from app.keyboards.sets import set_difficulty_keyboard
+from app.keyboards.sets import set_difficulty_keyboard, skip_weight_keyboard
 
 
 async def set_add_start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -19,7 +19,16 @@ async def set_add_start_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
     context.user_data["pending_set"] = {}
 
-    await query.edit_message_text("Введите вес в кг или '-' если без веса.")
+    equipment = context.user_data.get("exercise_equipment")
+
+    if equipment == "bodyweight":
+        await query.edit_message_text("Введите количество повторений.")
+        return WorkoutStates.ENTER_SET_REPS
+
+    await query.edit_message_text(
+        text="Введите вес в кг или нажмите «Пропустить».",
+        reply_markup=skip_weight_keyboard(),
+    )
     return WorkoutStates.ENTER_SET_WEIGHT
 
 
@@ -151,6 +160,7 @@ def build_add_set_conversation():
         states={
             WorkoutStates.ENTER_SET_WEIGHT: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, set_weight_handler),
+                CallbackQueryHandler(set_weight_skip_handler, pattern=r"^set:weight:skip$"),
             ],
             WorkoutStates.ENTER_SET_REPS: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, set_reps_handler),
@@ -170,3 +180,13 @@ def register_set_handlers(application):
         )
     )
     application.add_handler(CallbackQueryHandler(set_repeat_handler, pattern=r"^set:repeat$"))
+
+
+async def set_weight_skip_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data.setdefault("pending_set", {})
+
+    await query.edit_message_text("Введите количество повторений.")
+    return WorkoutStates.ENTER_SET_REPS

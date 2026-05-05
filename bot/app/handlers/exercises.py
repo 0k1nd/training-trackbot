@@ -1,20 +1,45 @@
 from telegram import Update
 from telegram.ext import CallbackQueryHandler, ContextTypes
 
-from app.keyboards.exercises import exercises_keyboard, workout_exercise_keyboard
+from app.keyboards.exercises import (
+    exercise_catalog_keyboard,
+    exercise_group_keyboard,
+    workout_exercise_keyboard,
+)
 from app.keyboards.workouts import active_workout_keyboard
 
 
-async def exercise_list_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def exercise_catalog_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     api_client = context.application.bot_data["api_client"]
-    exercises = await api_client.list_exercises(chat_id=query.from_user.id)
+    groups = await api_client.get_exercise_catalog(chat_id=query.from_user.id)
+
+    context.user_data["exercise_catalog"] = groups
 
     await query.edit_message_text(
-        text="Выберите упражнение:",
-        reply_markup=exercises_keyboard(exercises),
+        text="Выберите группу мышц:",
+        reply_markup=exercise_catalog_keyboard(groups),
+    )
+
+
+async def exercise_group_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    muscle = query.data.split(":")[2]
+    groups = context.user_data.get("exercise_catalog", [])
+
+    group = next((item for item in groups if item["muscle"] == muscle), None)
+
+    if not group:
+        await query.edit_message_text("Группа не найдена.")
+        return
+
+    await query.edit_message_text(
+        text=f"Упражнения: {muscle}",
+        reply_markup=exercise_group_keyboard(group),
     )
 
 
@@ -22,7 +47,12 @@ async def exercise_pick_handler(update: Update, context: ContextTypes.DEFAULT_TY
     query = update.callback_query
     await query.answer()
 
-    exercise_id = int(query.data.split(":")[2])
+    parts = query.data.split(":")
+    exercise_id = int(parts[2])
+    equipment = parts[3]
+
+    context.user_data["exercise_equipment"] = equipment
+
     workout_id = context.user_data.get("workout_id")
     api_client = context.application.bot_data["api_client"]
 
@@ -76,9 +106,14 @@ async def exercise_finish_handler(update: Update, context: ContextTypes.DEFAULT_
 
 
 def register_exercise_handlers(application):
-    application.add_handler(CallbackQueryHandler(exercise_list_handler, pattern=r"^exercise:list$"))
     application.add_handler(
-        CallbackQueryHandler(exercise_pick_handler, pattern=r"^exercise:pick:\d+$")
+        CallbackQueryHandler(exercise_catalog_handler, pattern=r"^exercise:catalog$")
+    )
+    application.add_handler(
+        CallbackQueryHandler(exercise_group_handler, pattern=r"^exercise:group:.+$")
+    )
+    application.add_handler(
+        CallbackQueryHandler(exercise_pick_handler, pattern=r"^exercise:pick:\d+:.+$")
     )
     application.add_handler(
         CallbackQueryHandler(exercise_finish_handler, pattern=r"^exercise:finish$")

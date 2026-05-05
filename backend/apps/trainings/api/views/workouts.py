@@ -189,3 +189,30 @@ class FinishWorkoutView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class WorkoutListView(APIView):
+    permission_classes = [IsTelegramBot]
+
+    def get(self, request):
+        chat_id = request.query_params.get("chat_id")
+
+        workouts = (
+            Workout.objects.filter(user__chat_id=chat_id)
+            .prefetch_related("items__exercise", "items__sets")
+            .order_by("-created_at")[:20]
+        )
+
+        return Response(
+            [
+                {
+                    "id": workout.id,
+                    "workout_type": workout.workout_type,
+                    "created_at": workout.created_at,
+                    "finished_at": workout.finished_at,
+                    "exercises_count": workout.items.count(),
+                    "sets_count": sum(item.sets.count() for item in workout.items.all()),
+                }
+                for workout in workouts
+            ]
+        )

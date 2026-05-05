@@ -2,7 +2,12 @@ from telegram import Update
 from telegram.ext import CallbackQueryHandler, ContextTypes
 
 from app.api.exceptions import BackendApiError, BackendValidationError
-from app.keyboards.workouts import active_workout_keyboard, workout_menu_keyboard
+from app.formatters.workouts import format_workouts
+from app.keyboards.workouts import (
+    active_workout_keyboard,
+    workout_history_keyboard,
+    workout_menu_keyboard,
+)
 
 
 async def workout_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -21,6 +26,19 @@ async def workout_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     await query.edit_message_text(
         text="Раздел тренировок",
         reply_markup=workout_menu_keyboard(has_active),
+    )
+
+
+async def workout_list_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    api_client = context.application.bot_data["api_client"]
+    workouts = await api_client.list_workouts(chat_id=query.from_user.id)
+
+    await query.edit_message_text(
+        text=format_workouts(workouts),
+        reply_markup=workout_history_keyboard(),
     )
 
 
@@ -100,6 +118,7 @@ async def finish_workout_handler(update: Update, context: ContextTypes.DEFAULT_T
 
 def register_workout_handlers(application):
     application.add_handler(CallbackQueryHandler(workout_menu_handler, pattern=r"^workout:menu$"))
+    application.add_handler(CallbackQueryHandler(workout_list_handler, pattern=r"^workout:list$"))
     application.add_handler(CallbackQueryHandler(start_workout_handler, pattern=r"^workout:start$"))
     application.add_handler(
         CallbackQueryHandler(continue_workout_handler, pattern=r"^workout:continue$")

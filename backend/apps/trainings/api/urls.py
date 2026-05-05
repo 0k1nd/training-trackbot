@@ -3,15 +3,19 @@ from apps.trainings.api.views import (
     AddSetView,
     CreateExerciseView,
     CurrentWorkoutView,
+    ExerciseCatalogView,
     ExerciseListView,
+    ExerciseSearchView,
     FinishWorkoutExerciseView,
     FinishWorkoutView,
     StartWorkoutView,
     WorkoutExerciseSetsView,
+    WorkoutListView,
 )
 from django.urls import path
 
 urlpatterns = [
+    path("workouts/", WorkoutListView.as_view(), name="bot-workout-list"),
     path("workouts/start/", StartWorkoutView.as_view(), name="bot-workout-start"),
     path("workouts/current/", CurrentWorkoutView.as_view(), name="bot-workout-current"),
     path(
@@ -21,6 +25,8 @@ urlpatterns = [
     ),
     path("workouts/finish/", FinishWorkoutView.as_view(), name="bot-workout-finish"),
     path("exercises/", ExerciseListView.as_view(), name="bot-exercise-list"),
+    path("exercises/catalog/", ExerciseCatalogView.as_view(), name="bot-exercise-catalog"),
+    path("exercises/search/", ExerciseSearchView.as_view(), name="bot-exercise-search"),
     path("exercises/create/", CreateExerciseView.as_view(), name="bot-exercise-create"),
     path("sets/add/", AddSetView.as_view(), name="bot-set-add"),
     path(

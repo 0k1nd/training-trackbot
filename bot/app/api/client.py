@@ -188,3 +188,45 @@ class BackendApiClient:
                 "workout_exercise_id": workout_exercise_id,
             },
         )
+
+    async def list_workouts(self, chat_id: int):
+        return await self._request(
+            method="GET",
+            path="/api/trainings/workouts/",
+            params={"chat_id": chat_id},
+        )
+
+    async def get_exercise_catalog(self, chat_id: int):
+        return await self._request(
+            method="GET",
+            path="/api/trainings/exercises/catalog/",
+            params={"chat_id": chat_id},
+        )
+
+    async def search_exercises(self, chat_id: int, query: str):
+        return await self._request(
+            method="GET",
+            path="/api/trainings/exercises/search/",
+            params={
+                "chat_id": chat_id,
+                "q": query,
+            },
+        )
+
+    async def create_exercise(
+        self,
+        chat_id: int,
+        name: str,
+        primary_muscle: str,
+        equipment: str,
+    ):
+        return await self._request(
+            method="POST",
+            path="/api/trainings/exercises/create/",
+            payload={
+                "chat_id": chat_id,
+                "name": name,
+                "primary_muscle": primary_muscle,
+                "equipment": equipment,
+            },
+        )
