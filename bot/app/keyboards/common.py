@@ -12,7 +12,7 @@ def start_keyboard() -> InlineKeyboardMarkup:
 def main_menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton(text="Тренировки", callback_data="menu:workouts")],
+            [InlineKeyboardButton(text="Тренировки", callback_data="workout:menu")],
             [InlineKeyboardButton(text="Параметры тела", callback_data="body:menu")],
         ]
     )

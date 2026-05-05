@@ -115,3 +115,76 @@ class BackendApiClient:
             path=f"/api/users/body-metrics/{metric_id}/",
             payload={"chat_id": chat_id},
         )
+
+    async def get_current_workout(self, chat_id: int):
+        return await self._request(
+            method="GET",
+            path="/api/trainings/workouts/current/",
+            params={"chat_id": chat_id},
+        )
+
+    async def start_workout(self, chat_id: int):
+        return await self._request(
+            method="POST",
+            path="/api/trainings/workouts/start/",
+            payload={"chat_id": chat_id},
+        )
+
+    async def finish_workout(self, chat_id: int, workout_id: int):
+        return await self._request(
+            method="POST",
+            path="/api/trainings/workouts/finish/",
+            payload={"chat_id": chat_id, "workout_id": workout_id},
+        )
+
+    async def list_exercises(self, chat_id: int):
+        return await self._request(
+            method="GET",
+            path="/api/trainings/exercises/",
+            params={"chat_id": chat_id},
+        )
+
+    async def add_exercise_to_workout(self, chat_id: int, workout_id: int, exercise_id: int):
+        return await self._request(
+            method="POST",
+            path="/api/trainings/workouts/add-exercise/",
+            payload={
+                "chat_id": chat_id,
+                "workout_id": workout_id,
+                "exercise_id": exercise_id,
+            },
+        )
+
+    async def add_set(self, chat_id: int, workout_exercise_id: int, weight, reps, difficulty: str):
+        payload = {
+            "chat_id": chat_id,
+            "workout_exercise_id": workout_exercise_id,
+            "difficulty": difficulty,
+        }
+        if weight is not None:
+            payload["weight"] = weight
+        if reps is not None:
+            payload["reps"] = reps
+
+        return await self._request(
+            method="POST",
+            path="/api/trainings/sets/add/",
+            payload=payload,
+        )
+
+    async def get_workout_exercise_sets(self, chat_id: int, workout_exercise_id: int):
+        return await self._request(
+            method="GET",
+            path=f"/api/trainings/workout-exercises/{workout_exercise_id}/sets/",
+            params={"chat_id": chat_id},
+        )
+
+    async def finish_workout_exercise(self, chat_id: int, workout_exercise_id: int):
+        return await self._request(
+            method="POST",
+            path="/api/trainings/workout-exercises/finish/",
+            payload={
+                "chat_id": chat_id,
+                "workout_exercise_id": workout_exercise_id,
+            },
+        )

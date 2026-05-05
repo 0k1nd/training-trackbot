@@ -2,8 +2,11 @@ from telegram.ext import Application
 
 from app.api.client import BackendApiClient
 from app.handlers.body_metrics import register_body_metrics_handlers
+from app.handlers.exercises import register_exercise_handlers
 from app.handlers.menu import register_menu_handlers
+from app.handlers.sets import register_set_handlers
 from app.handlers.start import register_start_handlers
+from app.handlers.workouts import register_workout_handlers
 from app.settings import BACKEND_API_URL, BOT_API_TOKEN, TELEGRAM_BOT_TOKEN
 
 
@@ -18,6 +21,9 @@ def main():
     register_start_handlers(application)
     register_menu_handlers(application)
     register_body_metrics_handlers(application)
+    register_workout_handlers(application)
+    register_exercise_handlers(application)
+    register_set_handlers(application)
 
     application.run_polling()
 
