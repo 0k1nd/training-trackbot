@@ -173,7 +173,17 @@ async def create_exercise_start_handler(update: Update, context: ContextTypes.DE
 
 
 async def create_exercise_name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["new_exercise"]["name"] = update.message.text.strip()
+    name = update.message.text.strip()
+
+    if len(name) < 2:
+        await update.message.reply_text("Название слишком короткое. Введите минимум 2 символа.")
+        return WorkoutStates.CREATE_EXERCISE_NAME
+
+    if len(name) > 100:
+        await update.message.reply_text("Название слишком длинное. Максимум — 100 символов.")
+        return WorkoutStates.CREATE_EXERCISE_NAME
+
+    context.user_data["new_exercise"]["name"] = name
 
     await update.message.reply_text(
         text="Выберите основную группу мышц.",

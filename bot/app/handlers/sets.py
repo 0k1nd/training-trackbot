@@ -166,20 +166,12 @@ def build_add_set_conversation():
                 MessageHandler(filters.TEXT & ~filters.COMMAND, set_reps_handler),
             ],
         },
-        fallbacks=[],
+        fallbacks=[
+            CallbackQueryHandler(set_cancel_handler, pattern=r"^set:cancel$"),
+        ],
         per_chat=True,
         per_user=True,
     )
-
-
-def register_set_handlers(application):
-    application.add_handler(build_add_set_conversation())
-    application.add_handler(
-        CallbackQueryHandler(
-            set_difficulty_handler, pattern=r"^set:difficulty:(easy|moderate|hard)$"
-        )
-    )
-    application.add_handler(CallbackQueryHandler(set_repeat_handler, pattern=r"^set:repeat$"))
 
 
 async def set_weight_skip_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -190,3 +182,26 @@ async def set_weight_skip_handler(update: Update, context: ContextTypes.DEFAULT_
 
     await query.edit_message_text("Введите количество повторений.")
     return WorkoutStates.ENTER_SET_REPS
+
+
+async def set_cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data.pop("pending_set", None)
+
+    await query.edit_message_text(
+        text="Добавление подхода отменено.",
+        reply_markup=workout_exercise_keyboard(),
+    )
+    return ConversationHandler.END
+
+
+def register_set_handlers(application):
+    application.add_handler(build_add_set_conversation())
+    application.add_handler(
+        CallbackQueryHandler(
+            set_difficulty_handler, pattern=r"^set:difficulty:(easy|moderate|hard)$"
+        )
+    )
+    application.add_handler(CallbackQueryHandler(set_repeat_handler, pattern=r"^set:repeat$"))
