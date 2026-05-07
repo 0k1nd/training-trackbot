@@ -18,11 +18,28 @@ def workout_menu_keyboard(has_active_workout: bool) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
-def workout_history_keyboard() -> InlineKeyboardMarkup:
+def workout_history_keyboard(workouts: list[dict]) -> InlineKeyboardMarkup:
+    rows = []
+
+    for item in workouts[:10]:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    f"Открыть #{item['id']}",
+                    callback_data=f"workout:detail:{item['id']}",
+                )
+            ]
+        )
+
+    rows.append([InlineKeyboardButton("Назад к тренировкам", callback_data="workout:menu")])
+    return InlineKeyboardMarkup(rows)
+
+
+def workout_detail_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
+            [InlineKeyboardButton("Назад к истории", callback_data="workout:list")],
             [InlineKeyboardButton("Назад к тренировкам", callback_data="workout:menu")],
-            [InlineKeyboardButton("Главное меню", callback_data="menu:main")],
         ]
     )
 

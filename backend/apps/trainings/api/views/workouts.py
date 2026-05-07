@@ -216,3 +216,56 @@ class WorkoutListView(APIView):
                 for workout in workouts
             ]
         )
+
+
+class WorkoutDetailView(APIView):
+    permission_classes = [IsTelegramBot]
+
+    def get(self, request, pk: int):
+        chat_id = request.query_params.get("chat_id")
+
+        workout = (
+            Workout.objects.filter(
+                id=pk,
+                user__chat_id=chat_id,
+            )
+            .prefetch_related("items__exercise", "items__sets")
+            .first()
+        )
+
+        if not workout:
+            return Response({"detail": "workout not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {
+                "id": workout.id,
+                "workout_type": workout.workout_type,
+                "note": workout.note,
+                "created_at": workout.created_at,
+                "finished_at": workout.finished_at,
+                "items": [
+                    {
+                        "id": item.id,
+                        "exercise": {
+                            "id": item.exercise.id,
+                            "name": item.exercise.name,
+                            "equipment": item.exercise.equipment,
+                            "primary_muscle": item.exercise.primary_muscle,
+                        },
+                        "order": item.order,
+                        "finished_at": item.finished_at,
+                        "sets": [
+                            {
+                                "id": set_obj.id,
+                                "set_number": set_obj.set_number,
+                                "weight": set_obj.weight,
+                                "reps": set_obj.reps,
+                                "difficulty": set_obj.difficulty,
+                            }
+                            for set_obj in item.sets.all().order_by("set_number")
+                        ],
+                    }
+                    for item in workout.items.all().order_by("order")
+                ],
+            }
+        )

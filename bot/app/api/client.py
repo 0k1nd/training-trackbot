@@ -203,14 +203,25 @@ class BackendApiClient:
             params={"chat_id": chat_id},
         )
 
+    async def get_workout(self, chat_id: int, workout_id: int):
+        return await self._request(
+            method="GET",
+            path=f"/api/trainings/workouts/{workout_id}/",
+            params={"chat_id": chat_id},
+        )
+
+    async def get_exercise(self, chat_id: int, exercise_id: int):
+        return await self._request(
+            method="GET",
+            path=f"/api/trainings/exercises/{exercise_id}/",
+            params={"chat_id": chat_id},
+        )
+
     async def search_exercises(self, chat_id: int, query: str):
         return await self._request(
             method="GET",
             path="/api/trainings/exercises/search/",
-            params={
-                "chat_id": chat_id,
-                "q": query,
-            },
+            params={"chat_id": chat_id, "q": query},
         )
 
     async def create_exercise(
@@ -219,6 +230,7 @@ class BackendApiClient:
         name: str,
         primary_muscle: str,
         equipment: str,
+        description: str | None = None,
     ):
         return await self._request(
             method="POST",
@@ -228,5 +240,6 @@ class BackendApiClient:
                 "name": name,
                 "primary_muscle": primary_muscle,
                 "equipment": equipment,
+                "description": description,
             },
         )

@@ -2,9 +2,10 @@ from telegram import Update
 from telegram.ext import CallbackQueryHandler, ContextTypes
 
 from app.api.exceptions import BackendApiError, BackendValidationError
-from app.formatters.workouts import format_workouts
+from app.formatters.workouts import format_workout_detail, format_workouts
 from app.keyboards.workouts import (
     active_workout_keyboard,
+    workout_detail_keyboard,
     workout_history_keyboard,
     workout_menu_keyboard,
 )
@@ -38,7 +39,25 @@ async def workout_list_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
     await query.edit_message_text(
         text=format_workouts(workouts),
-        reply_markup=workout_history_keyboard(),
+        reply_markup=workout_history_keyboard(workouts),
+    )
+
+
+async def workout_detail_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    workout_id = int(query.data.split(":")[2])
+    api_client = context.application.bot_data["api_client"]
+
+    workout = await api_client.get_workout(
+        chat_id=query.from_user.id,
+        workout_id=workout_id,
+    )
+
+    await query.edit_message_text(
+        text=format_workout_detail(workout),
+        reply_markup=workout_detail_keyboard(),
     )
 
 
@@ -125,4 +144,7 @@ def register_workout_handlers(application):
     )
     application.add_handler(
         CallbackQueryHandler(finish_workout_handler, pattern=r"^workout:finish$")
+    )
+    application.add_handler(
+        CallbackQueryHandler(workout_detail_handler, pattern=r"^workout:detail:\d+$")
     )

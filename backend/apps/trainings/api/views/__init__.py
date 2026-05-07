@@ -1,4 +1,10 @@
-from .exercises import CreateExerciseView, ExerciseCatalogView, ExerciseListView, ExerciseSearchView
+from .exercises import (
+    CreateExerciseView,
+    ExerciseCatalogView,
+    ExerciseDetailView,
+    ExerciseListView,
+    ExerciseSearchView,
+)
 from .sets import AddSetView
 from .workouts import (
     AddExerciseToWorkoutView,
@@ -6,6 +12,7 @@ from .workouts import (
     FinishWorkoutExerciseView,
     FinishWorkoutView,
     StartWorkoutView,
+    WorkoutDetailView,
     WorkoutExerciseSetsView,
     WorkoutListView,
 )
@@ -23,4 +30,6 @@ __all__ = [
     "WorkoutListView",
     "ExerciseSearchView",
     "ExerciseCatalogView",
+    "ExerciseDetailView",
+    "WorkoutDetailView",
 ]

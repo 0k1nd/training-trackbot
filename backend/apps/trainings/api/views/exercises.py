@@ -4,6 +4,7 @@ from apps.accounts.models import User
 from apps.core.permissions import IsTelegramBot
 from apps.trainings.models import Exercise
 from django.db.models import Q
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -37,11 +38,24 @@ class CreateExerciseView(APIView):
         exercise = Exercise.objects.create(
             name=request.data["name"],
             primary_muscle=request.data["primary_muscle"],
+            equipment=request.data.get("equipment", "bodyweight"),
+            description=request.data.get("description"),
             author=user,
             is_basic=False,
         )
 
-        return Response({"id": exercise.id})
+        return Response(
+            {
+                "id": exercise.id,
+                "name": exercise.name,
+                "description": exercise.description,
+                "primary_muscle": exercise.primary_muscle,
+                "secondary_muscle": exercise.secondary_muscle,
+                "equipment": exercise.equipment,
+                "is_basic": exercise.is_basic,
+            },
+            status=201,
+        )
 
 
 class ExerciseCatalogView(APIView):
@@ -111,4 +125,35 @@ class ExerciseSearchView(APIView):
                 }
                 for exercise in exercises
             ]
+        )
+
+
+class ExerciseDetailView(APIView):
+    permission_classes = [IsTelegramBot]
+
+    def get(self, request, pk: int):
+        chat_id = request.query_params.get("chat_id")
+        user = User.objects.filter(chat_id=chat_id).first()
+
+        if not user:
+            return Response({"detail": "user not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        exercise = Exercise.objects.filter(
+            Q(id=pk),
+            Q(author=user) | Q(is_basic=True),
+        ).first()
+
+        if not exercise:
+            return Response({"detail": "exercise not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {
+                "id": exercise.id,
+                "name": exercise.name,
+                "description": exercise.description,
+                "primary_muscle": exercise.primary_muscle,
+                "secondary_muscle": exercise.secondary_muscle,
+                "equipment": exercise.equipment,
+                "is_basic": exercise.is_basic,
+            }
         )
